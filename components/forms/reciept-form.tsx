@@ -21,9 +21,7 @@ export function ReceiptForm({ projects, createAction }: ReceiptFormProps) {
       <CardContent className="p-6">
         <form action={createAction} className="space-y-5">
           <div>
-            <h2 className="text-lg font-bold text-gray-950">
-              Receipt Details
-            </h2>
+            <h2 className="text-lg font-bold text-gray-950">Receipt Details</h2>
             <p className="mt-1 text-sm font-medium text-gray-700">
               Add customer payment details. PDF generation will be added next.
             </p>
@@ -70,8 +68,8 @@ export function ReceiptForm({ projects, createAction }: ReceiptFormProps) {
             </label>
             <Input
               name="amount"
-              type="number"
-              min="1"
+              type="text"
+              inputMode="numeric"
               placeholder="Example: 50000"
               required
             />
@@ -127,7 +125,11 @@ export function ReceiptForm({ projects, createAction }: ReceiptFormProps) {
 
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <Link href="/dashboard/receipts">
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
                 Cancel
               </Button>
             </Link>
