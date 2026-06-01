@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   allowedDevOrigins:[
     "https://postwar-daybreak-theology.ngrok-free.dev"
   ],   
+async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/dashboard",
+        permanent: false, // 307 redirect
+      },
+    ];
+  },
 };
 
 export default nextConfig;
