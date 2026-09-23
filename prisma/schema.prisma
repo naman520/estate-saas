@@ -79,12 +79,17 @@ model Project {
   ctaHeading         String?
   ctaSubtext         String?
   ctaButtonText      String?
+  formSettings       Json?
+
+  templateId String?
+  template   landingTemplate? @relation(fields: [templateId], references: [id])
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   leads       Lead[]
   receipts    Receipt[]
+  domains     ProjectDomain[]
 }
 
 enum ProjectStatus {
@@ -110,6 +115,7 @@ model Lead {
   status      LeadStatus @default(NEW)
   followUpAt  DateTime?
   notes       String?
+  formData    Json?
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -146,4 +152,49 @@ model Receipt {
   receiptUrl    String?
 
   createdAt     DateTime @default(now())
+}
+
+enum TemplateTier {
+  FREE
+  PAID
+}
+
+model landingTemplate {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  tier        TemplateTier
+  description String?
+  previewImg  String?
+
+  projects    Project[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum DomainType {
+  CUSTOM
+  PLATFORM_SUBDOMAIN
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFYING
+  ACTIVE
+  ERROR
+}
+
+model ProjectDomain {
+  id        String       @id @default(cuid())
+  domain    String       @unique
+  type      DomainType
+  status    DomainStatus
+  isPrimary Boolean      @default(false)
+
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }

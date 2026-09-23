@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   ExternalLink,
+  FileText,
   ImageIcon,
+  LayoutTemplate,
   LinkIcon,
   MapPin,
+  PenLine,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
@@ -16,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { ProjectEditForm } from "@/components/forms/project-edit-form";
 import { updateProject } from "./actions";
 import { getCurrentCompany } from "@/lib/current-company";
+import { CustomDomainCard } from "@/components/domains/custom-domain-card";
 
 type ProjectDetailPageProps = {
   params: Promise<{
@@ -37,11 +41,16 @@ export default async function ProjectDetailPage({
     },
     include: {
       company: true,
+      template: true,
       leads: {
         select: {
           id: true,
           status: true,
         },
+      },
+      domains: {
+        where: { isPrimary: true },
+        take: 1,
       },
     },
   });
@@ -116,39 +125,10 @@ export default async function ProjectDetailPage({
         <ProjectEditForm project={project} updateAction={updateProjectWithId} />
 
         <div className="space-y-6">
-          <Card>
-            <CardContent>
-              <h2 className="text-lg font-bold text-gray-950">Public Page</h2>
-              <p className="mt-1 text-sm font-medium text-gray-700">
-                This is the generated landing page URL for this project.
-              </p>
-
-              <div className="mt-4 rounded-xl bg-gray-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-600">
-                  Default URL
-                </p>
-                <p className="mt-1 break-all text-sm font-bold text-gray-950">
-                  {publicUrl}
-                </p>
-              </div>
-
-              <div className="mt-4 rounded-xl bg-gray-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-600">
-                  Custom Domain
-                </p>
-                <p className="mt-1 break-all text-sm font-bold text-gray-950">
-                  {project.customDomain || "Not configured"}
-                </p>
-              </div>
-
-              <Link href={publicUrl} target="_blank" className="mt-4 block">
-                <Button variant="outline" className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Preview Page
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <CustomDomainCard
+              projectId={project.id}
+              domain={project.domains[0] ?? null}
+            />
 
           <Card>
             <CardContent>
@@ -198,6 +178,47 @@ export default async function ProjectDetailPage({
               />
             </Card>
           )}
+
+          {/* Template Selection Card */}
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-950">Landing Template</h2>
+                <LayoutTemplate className="h-5 w-5 text-gray-400" />
+              </div>
+              <p className="mt-1 text-sm font-medium text-gray-600">
+                {project.template
+                  ? `Active: ${project.template.name}`
+                  : "No template selected — using default."}
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <Link
+                  href={`/dashboard/projects/${project.id}/landing/content`}
+                >
+                  <Button className="w-full">
+                    <PenLine className="mr-2 h-4 w-4" />
+                    Edit Content
+                  </Button>
+                </Link>
+                <Link
+                  href={`/dashboard/projects/${project.id}/landing/form`}
+                >
+                  <Button variant="outline" className="w-full">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Edit Lead Form
+                  </Button>
+                </Link>
+                <Link
+                  href={`/dashboard/projects/${project.id}/landing/templates`}
+                >
+                  <Button variant="outline" className="w-full">
+                    <LayoutTemplate className="mr-2 h-4 w-4" />
+                    {project.template ? "Change Template" : "Select Template"}
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
     </PageContainer>
