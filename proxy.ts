@@ -9,9 +9,6 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   const hostname = req.headers.get("host") || "";
   const { pathname } = req.nextUrl;
 
-  console.log("[proxy] hostname:", hostname);
-  console.log("[proxy] pathname:", pathname);
-  console.log("[proxy] system hostname:", isSystemHostname(hostname));
 
   // 1. Protect dashboard routes with Clerk
   if (isProtectedRoute(req)) {
@@ -43,7 +40,6 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
   url.pathname = "/domain-resolver";
   url.searchParams.set("host", hostname);
-  console.log("[proxy] rewriting:", hostname, "→", url.toString());
   return NextResponse.rewrite(url);
 });
 

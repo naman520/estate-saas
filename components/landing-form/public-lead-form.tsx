@@ -3,11 +3,26 @@
 import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { createFormLead } from "@/app/p/[slug]/actions";
+
+// Must match HONEYPOT_FIELD in app/p/[slug]/actions.ts
+// (a "use server" file can only export async functions to client components)
+const HONEYPOT_FIELD = "_company_website";
+
+const ATTRIBUTION_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "fbclid",
+  "gclid",
+];
 import type { FormField } from "@/lib/form-config";
 
 type PublicLeadFormProps = {
   projectId: string;
-  companyId: string;
+  /** @deprecated No longer sent — the server derives companyId from the project. */
+  companyId?: string;
   projectSlug: string;
   projectName: string;
   fields: FormField[];
@@ -111,7 +126,6 @@ function SubmitButton({
 
 export function PublicLeadForm({
   projectId,
-  companyId,
   projectSlug,
   projectName,
   fields,
@@ -159,13 +173,34 @@ export function PublicLeadForm({
 
         {/* Hidden meta fields */}
         <input type="hidden" name="projectId" value={projectId} />
-        <input type="hidden" name="companyId" value={companyId} />
         <input type="hidden" name="projectSlug" value={projectSlug} />
         <input type="hidden" name="projectName" value={projectName} />
         <input type="hidden" name="source" value={source} />
         {returnPath && (
           <input type="hidden" name="_returnPath" value={returnPath} />
         )}
+
+        {/* Ad attribution: carry UTM / click IDs from the URL into the lead */}
+        {ATTRIBUTION_KEYS.map((key) => {
+          const value = searchParams.get(key);
+          return value ? (
+            <input key={key} type="hidden" name={key} value={value} />
+          ) : null;
+        })}
+
+        {/* Honeypot: invisible to humans, bots fill it and get dropped */}
+        <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+          <label>
+            Website
+            <input
+              type="text"
+              name={HONEYPOT_FIELD}
+              tabIndex={-1}
+              autoComplete="off"
+              defaultValue=""
+            />
+          </label>
+        </div>
 
         {/* Dynamic fields */}
         {fields.map((field) => (

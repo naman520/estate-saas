@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/current-company";
 
 export async function selectLandingTemplate(
   projectId: string,
@@ -11,33 +12,34 @@ export async function selectLandingTemplate(
     throw new Error("Project ID and template ID are required.");
   }
 
-  const template = await prisma.landingTemplate.findUnique({
-    where: {
-      id: templateId,
-    },
-  });
+  // Only admins of the owning company may change a project's template
+  const { company } = await requireRole("ADMIN");
 
-  if (!template) {
-    throw new Error("Template not found.");
-  }
-
-  const project = await prisma.project.findUnique({
-    where: {
-      id: projectId,
-    },
-  });
+  const [project, template] = await Promise.all([
+    prisma.project.findFirst({
+      where: { id: projectId, companyId: company.id },
+    }),
+    prisma.landingTemplate.findUnique({
+      where: { id: templateId },
+    }),
+  ]);
 
   if (!project) {
     throw new Error("Project not found.");
   }
 
+  if (!template) {
+    throw new Error("Template not found.");
+  }
+
+  // Paid templates are gated behind the PRO plan
+  if (template.tier === "PAID" && company.plan !== "PRO") {
+    throw new Error("This template requires the PRO plan.");
+  }
+
   await prisma.project.update({
-    where: {
-      id: projectId,
-    },
-    data: {
-      templateId,
-    },
+    where: { id: project.id },
+    data: { templateId },
   });
 
   revalidatePath(`/dashboard/projects/${projectId}/landing/templates`);

@@ -161,8 +161,16 @@ export function CustomDomainCard({ projectId, domain }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domainId: domain.id, projectId }),
       });
-      const data: CheckResult = await res.json();
-      setCheckResult(data);
+      const data = await res.json();
+      if (!res.ok) {
+        setCheckResult({
+          status: "ERROR",
+          resolvedTo: null,
+          message: data?.error ?? "Could not check this domain.",
+        });
+        return;
+      }
+      setCheckResult(data as CheckResult);
       setOptimisticStatus(data.status);
     } catch {
       setCheckResult({

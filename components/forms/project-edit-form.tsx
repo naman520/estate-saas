@@ -16,7 +16,6 @@ type ProjectEditFormProps = {
     heroImage: string | null;
     status: string;
 
-    customDomain: string | null;
     formPosition: string;
     showHeroImage: boolean;
     showLocation: boolean;
@@ -206,21 +205,6 @@ export function ProjectEditForm({
               label="Show contact CTA"
               defaultChecked={project.showContactCta}
             />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-bold text-gray-950">
-              Custom Domain
-            </label>
-            <Input
-              name="customDomain"
-              defaultValue={project.customDomain || ""}
-              placeholder="Example: www.xyz.com"
-            />
-            <p className="mt-2 text-xs font-medium text-gray-600">
-              For now this will only be saved. Actual DNS/domain connection will
-              be added after deployment.
-            </p>
           </div>
 
           <div className="border-t border-gray-200 pt-6">

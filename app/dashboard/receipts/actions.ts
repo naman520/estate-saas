@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentCompany } from "@/lib/current-company";
 
-function generateReceiptNumber(count: number) {
-  const nextNumber = count + 1;
-  return `EF-${String(nextNumber).padStart(4, "0")}`;
+function formatReceiptNumber(seq: number) {
+  return `EF-${String(seq).padStart(4, "0")}`;
 }
 
 export async function createReceipt(formData: FormData) {
@@ -33,8 +32,8 @@ export async function createReceipt(formData: FormData) {
 
   const amount = Number(amountValue);
 
-  if (Number.isNaN(amount) || amount <= 0) {
-    throw new Error("Amount must be a valid positive number.");
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error("Amount must be a positive whole number (in rupees).");
   }
 
   const company = await getCurrentCompany();
@@ -52,27 +51,30 @@ export async function createReceipt(formData: FormData) {
     }
   }
 
-  const receiptCount = await prisma.receipt.count({
-    where: {
-      companyId: company.id,
-    },
-  });
+  // Atomically bump the company's receipt counter and create the receipt
+  // in one transaction. The UPDATE takes a row lock on the company, so two
+  // concurrent requests are serialised and can never get the same number.
+  await prisma.$transaction(async (tx) => {
+    const { receiptSeq } = await tx.company.update({
+      where: { id: company.id },
+      data: { receiptSeq: { increment: 1 } },
+      select: { receiptSeq: true },
+    });
 
-  const receiptNumber = generateReceiptNumber(receiptCount);
-
-  await prisma.receipt.create({
-    data: {
-      companyId: company.id,
-      projectId: projectId || null,
-      receiptNumber,
-      customerName,
-      phone: phone || null,
-      amount,
-      paymentMode,
-      transactionId: transactionId || null,
-      unitDetails: unitDetails || null,
-      notes: notes || null,
-    },
+    await tx.receipt.create({
+      data: {
+        companyId: company.id,
+        projectId: projectId || null,
+        receiptNumber: formatReceiptNumber(receiptSeq),
+        customerName,
+        phone: phone || null,
+        amount,
+        paymentMode,
+        transactionId: transactionId || null,
+        unitDetails: unitDetails || null,
+        notes: notes || null,
+      },
+    });
   });
 
   redirect("/dashboard/receipts");

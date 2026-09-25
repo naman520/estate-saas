@@ -11,6 +11,16 @@
 
 const VERCEL_API = "https://api.vercel.com";
 
+/**
+ * True when the Vercel API is configured. In production this should always
+ * be true; locally it lets domain flows fall back to a plain DNS check.
+ */
+export function hasVercelCredentials(): boolean {
+  return Boolean(
+    process.env.VERCEL_TOKEN?.trim() && process.env.VERCEL_PROJECT_ID?.trim()
+  );
+}
+
 function getCredentials(): { token: string; projectId: string } | null {
   const token = process.env.VERCEL_TOKEN?.trim();
   const projectId = process.env.VERCEL_PROJECT_ID?.trim();
