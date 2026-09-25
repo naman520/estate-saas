@@ -28,7 +28,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const company = await getCurrentCompany();
 
   const where: Prisma.LeadWhereInput = {
-    companyId: company?.id,
+    companyId: company.id,
   };
 
   if (search) {

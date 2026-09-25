@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentCompany } from "@/lib/current-company";
+import { requireRole } from "@/lib/current-company";
 
 export async function saveLandingContent(
   projectId: string,
   formData: FormData
 ) {
-  const company = await getCurrentCompany();
+  const { company } = await requireRole("ADMIN");
 
   const existing = await prisma.project.findUnique({
     where: { id: projectId, companyId: company.id },

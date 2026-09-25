@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentCompany } from "@/lib/current-company";
+import { requireRole } from "@/lib/current-company";
 import {
   VALID_FIELD_TYPES,
   MAX_FIELDS,
@@ -10,8 +10,14 @@ import {
 import type { FormField } from "@/lib/form-config";
 
 export async function saveFormConfig(formData: FormData): Promise<{ error?: string } | null> {
+  let company;
   try {
-    const company = await getCurrentCompany();
+    ({ company } = await requireRole("ADMIN"));
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unauthorized" };
+  }
+
+  try {
     const projectId = String(formData.get("projectId") || "").trim();
 
     if (!projectId) {

@@ -48,9 +48,5 @@ export default async function DomainLandingPage({
     notFound();
   }
 
-  console.log(
-    `[_domain] host=${hostname} → slug=${slug} templateSlug=${project.template?.slug ?? "free-clean"}`,
-  );
-
   return renderLandingTemplate(project, "/");
 }

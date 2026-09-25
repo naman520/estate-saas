@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, FileText, PenLine } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentCompany } from "@/lib/current-company";
 import { selectLandingTemplate } from "./actions";
 
 type PageProps = {
@@ -11,9 +12,10 @@ type PageProps = {
 
 export default async function LandingTemplatesPage({ params }: PageProps) {
   const { id } = await params;
+  const company = await getCurrentCompany();
 
-  const project = await prisma.project.findUnique({
-    where: { id },
+  const project = await prisma.project.findFirst({
+    where: { id, companyId: company.id },
     include: { template: true },
   });
 
@@ -74,6 +76,7 @@ export default async function LandingTemplatesPage({ params }: PageProps) {
         {templates.map((template) => {
           const isSelected = project.templateId === template.id;
           const isPaid = template.tier === "PAID";
+          const isLocked = isPaid && company.plan !== "PRO";
 
           return (
             <div
@@ -119,13 +122,17 @@ export default async function LandingTemplatesPage({ params }: PageProps) {
                 <button
                   type="submit"
                   className={`w-full rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    isSelected
+                    isSelected || isLocked
                       ? "bg-gray-200 text-gray-700 cursor-default"
                       : "bg-black text-white hover:bg-gray-800"
                   }`}
-                  disabled={isSelected}
+                  disabled={isSelected || isLocked}
                 >
-                  {isSelected ? "✓ Selected" : "Use Template"}
+                  {isSelected
+                    ? "✓ Selected"
+                    : isLocked
+                      ? "🔒 Upgrade to PRO"
+                      : "Use Template"}
                 </button>
               </form>
             </div>

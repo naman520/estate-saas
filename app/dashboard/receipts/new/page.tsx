@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentCompany } from "@/lib/current-company";
 import { PageContainer } from "@/components/dashboard/page-container";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ReceiptForm } from "@/components/forms/reciept-form";
 import { createReceipt } from "../actions";
 
 export default async function NewReceiptPage() {
+  const company = await getCurrentCompany();
+
   const projects = await prisma.project.findMany({
+    where: {
+      companyId: company.id,
+    },
     orderBy: {
       name: "asc",
     },

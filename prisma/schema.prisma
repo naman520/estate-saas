@@ -20,7 +20,12 @@ model Company {
   email     String?
   whatsappNumber String?
   receiptFooter  String?
-  
+
+  plan       CompanyPlan @default(FREE)
+  // Per-company receipt counter. Incremented atomically inside a transaction
+  // so two concurrent receipts can never get the same number.
+  receiptSeq Int         @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,7 +40,7 @@ model User {
   clerkId   String   @unique
   name      String?
   email     String?
-  role      String   @default("ADMIN")
+  role      Role     @default(ADMIN)
 
   companyId String
   company   Company  @relation(fields: [companyId], references: [id])
@@ -47,6 +52,11 @@ model User {
 enum Role {
   ADMIN
   SALES
+}
+
+enum CompanyPlan {
+  FREE
+  PRO
 }
 
 model Project {
@@ -64,7 +74,6 @@ model Project {
   heroImage   String?
   status      ProjectStatus @default(ACTIVE)
 
-  customDomain     String? @unique
   formPosition     String  @default("HERO_RIGHT")
 
   showHeroImage    Boolean @default(true)
@@ -141,7 +150,7 @@ model Receipt {
   projectId     String?
   project       Project? @relation(fields: [projectId], references: [id])
 
-  receiptNumber String   @unique
+  receiptNumber String
   customerName  String
   phone         String?
   amount        Int
@@ -152,6 +161,9 @@ model Receipt {
   receiptUrl    String?
 
   createdAt     DateTime @default(now())
+
+  // Receipt numbers are unique per company, not globally
+  @@unique([companyId, receiptNumber])
 }
 
 enum TemplateTier {

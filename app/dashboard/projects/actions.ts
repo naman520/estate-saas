@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/utils";
-import { getCurrentCompany } from "@/lib/current-company";
+import { requireRole } from "@/lib/current-company";
+import { generateUniqueProjectSlug } from "@/lib/project-slug";
 
 export async function createProject(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
@@ -23,17 +23,9 @@ export async function createProject(formData: FormData) {
     throw new Error("Project name and location are required.");
   }
 
-  const company = await getCurrentCompany();
+  const { company } = await requireRole("ADMIN");
 
-  const baseSlug = slugify(name);
-
-  const existingProject = await prisma.project.findUnique({
-    where: {
-      slug: baseSlug,
-    },
-  });
-
-  const slug = existingProject ? `${baseSlug}-${Date.now()}` : baseSlug;
+  const slug = await generateUniqueProjectSlug(name);
 
   await prisma.project.create({
     data: {

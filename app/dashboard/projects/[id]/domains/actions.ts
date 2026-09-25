@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { normalizeDomain } from "@/lib/domains";
-import { addDomainToVercel, removeDomainFromVercel, verifyDomainOnVercel } from "@/lib/vercel-domains";
-import { checkDomainCNAME } from "@/lib/dns-verify";
-import { getCurrentCompany } from "@/lib/current-company";
+import {
+  addDomainToVercel,
+  hasVercelCredentials,
+  removeDomainFromVercel,
+} from "@/lib/vercel-domains";
+import { requireRole } from "@/lib/current-company";
 
 // ---------------------------------------------------------------------------
 // Add custom domain
@@ -16,7 +19,7 @@ export async function addCustomDomain(
   projectId: string,
   formData: FormData
 ): Promise<void> {
-  const company = await getCurrentCompany();
+  const { company } = await requireRole("ADMIN");
   const rawDomain = String(formData.get("domain") || "").trim();
 
   // Validate and normalize
@@ -27,7 +30,7 @@ export async function addCustomDomain(
   const domain = normalized.domain;
 
   // Verify the project belongs to this company
-  const project = await prisma.project.findUnique({
+  const project = await prisma.project.findFirst({
     where: { id: projectId, companyId: company.id },
   });
   if (!project) {
@@ -45,83 +48,36 @@ export async function addCustomDomain(
     throw new Error("This domain is already in use by another project.");
   }
 
-  // Remove any existing primary domain for this project first
-  await prisma.projectDomain.updateMany({
-    where: { projectId, isPrimary: true },
-    data: { isPrimary: false },
-  });
-
-  // Register domain with Vercel (non-blocking — DB record is created regardless)
-  const vercelResult = await addDomainToVercel(domain);
-  if (!vercelResult.ok) {
-    console.warn("[domains/actions] Vercel domain add failed:", vercelResult.error);
+  // Register with Vercel first. In production (credentials present) a failure
+  // here is fatal: a DB record without a Vercel domain can never go live.
+  if (hasVercelCredentials()) {
+    const vercelResult = await addDomainToVercel(domain);
+    if (!vercelResult.ok) {
+      throw new Error(
+        `Could not register domain with hosting provider: ${vercelResult.error}`
+      );
+    }
   }
 
-  // Create DB record
-  await prisma.projectDomain.create({
-    data: {
-      domain,
-      type: "CUSTOM",
-      status: "PENDING",
-      isPrimary: true,
-      projectId,
-    },
-  });
+  // Swap the primary domain atomically
+  await prisma.$transaction([
+    prisma.projectDomain.updateMany({
+      where: { projectId, isPrimary: true },
+      data: { isPrimary: false },
+    }),
+    prisma.projectDomain.create({
+      data: {
+        domain,
+        type: "CUSTOM",
+        status: "PENDING",
+        isPrimary: true,
+        projectId,
+      },
+    }),
+  ]);
 
   revalidatePath(`/dashboard/projects/${projectId}`);
   redirect(`/dashboard/projects/${projectId}`);
-}
-
-// ---------------------------------------------------------------------------
-// Verify custom domain (called by "Check DNS" button)
-// ---------------------------------------------------------------------------
-
-export async function verifyCustomDomain(
-  projectId: string,
-  domainId: string
-): Promise<{ status: string; message: string }> {
-  const company = await getCurrentCompany();
-
-  const domainRecord = await prisma.projectDomain.findUnique({
-    where: { id: domainId },
-    include: { project: true },
-  });
-
-  if (!domainRecord || domainRecord.project.companyId !== company.id) {
-    throw new Error("Domain record not found.");
-  }
-
-  const domain = domainRecord.domain;
-
-  // Run both checks in parallel
-  const [vercelResult, dnsResult] = await Promise.all([
-    verifyDomainOnVercel(domain),
-    checkDomainCNAME(domain),
-  ]);
-
-  const isVerified = vercelResult.verified || dnsResult.verified;
-
-  const newStatus = isVerified ? "ACTIVE" : "ERROR";
-  await prisma.projectDomain.update({
-    where: { id: domainId },
-    data: { status: newStatus },
-  });
-
-  revalidatePath(`/dashboard/projects/${projectId}`);
-
-  if (isVerified) {
-    return {
-      status: "ACTIVE",
-      message: `✅ Domain verified! ${domain} is now live.`,
-    };
-  }
-
-  return {
-    status: "ERROR",
-    message:
-      dnsResult.error ??
-      "DNS not verified yet. Make sure you added the CNAME record and allow up to 48 hours for propagation.",
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -132,14 +88,13 @@ export async function removeCustomDomain(
   projectId: string,
   domainId: string
 ): Promise<void> {
-  const company = await getCurrentCompany();
+  const { company } = await requireRole("ADMIN");
 
-  const domainRecord = await prisma.projectDomain.findUnique({
-    where: { id: domainId },
-    include: { project: true },
+  const domainRecord = await prisma.projectDomain.findFirst({
+    where: { id: domainId, project: { companyId: company.id } },
   });
 
-  if (!domainRecord || domainRecord.project.companyId !== company.id) {
+  if (!domainRecord) {
     throw new Error("Domain record not found.");
   }
 
@@ -147,7 +102,7 @@ export async function removeCustomDomain(
   await removeDomainFromVercel(domainRecord.domain);
 
   // Delete DB record
-  await prisma.projectDomain.delete({ where: { id: domainId } });
+  await prisma.projectDomain.delete({ where: { id: domainRecord.id } });
 
   revalidatePath(`/dashboard/projects/${projectId}`);
   redirect(`/dashboard/projects/${projectId}`);
