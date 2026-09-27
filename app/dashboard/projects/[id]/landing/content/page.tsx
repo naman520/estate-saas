@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { saveLandingContent } from "./actions";
+import { FileUploadField } from "@/components/uploads/file-upload-field";
 
 type PageProps = {
   params: Promise<{
@@ -197,19 +198,14 @@ export default async function LandingContentPage({ params }: PageProps) {
           <CardContent>
             <SectionHeader
               title="Media & Links"
-              description="Enter direct URLs. File uploads will be available in a future update."
+              description="Upload files or paste direct links."
             />
             <div className="mt-6 grid gap-5">
               <Field
-                label="Hero Image URL"
-                hint="Full URL to the main project image (JPEG/PNG/WebP)."
+                label="Hero Image"
+                hint="The main project image shown at the top of the landing page."
               >
-                <Input
-                  name="heroImage"
-                  defaultValue={project.heroImage ?? ""}
-                  placeholder="https://example.com/images/project.jpg"
-                  type="url"
-                />
+                <FileUploadField name="heroImage" defaultValue={project.heroImage} />
               </Field>
 
               <Field
@@ -225,14 +221,13 @@ export default async function LandingContentPage({ params }: PageProps) {
               </Field>
 
               <Field
-                label="Brochure URL"
-                hint="Direct link to the downloadable project brochure (PDF)."
+                label="Brochure (PDF)"
+                hint="The downloadable project brochure."
               >
-                <Input
+                <FileUploadField
                   name="brochureUrl"
-                  defaultValue={project.brochureUrl ?? ""}
-                  placeholder="https://example.com/brochure.pdf"
-                  type="url"
+                  kind="pdf"
+                  defaultValue={project.brochureUrl}
                 />
               </Field>
             </div>

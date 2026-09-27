@@ -67,3 +67,29 @@ export function safeRelativePath(input: string, fallback: string): string {
 
   return value;
 }
+
+/**
+ * Converts a stored phone number to international digits for wa.me / tel:.
+ * 10-digit numbers are assumed to be Indian (+91).
+ * Returns null if the number is too short to be valid.
+ */
+export function toInternationalDigits(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length >= 11 && digits.length <= 15) return digits;
+  return null;
+}
+
+/** "9876543210" → "+91 98765 43210" (other formats are returned as-is). */
+export function formatIndianPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  return phone;
+}
+
+/** Click-to-chat WhatsApp link with an optional prefilled message. */
+export function whatsappLink(phone: string, message?: string): string | null {
+  const intl = toInternationalDigits(phone);
+  if (!intl) return null;
+  return `https://wa.me/${intl}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
+}

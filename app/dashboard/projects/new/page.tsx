@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageContainer } from "@/components/dashboard/page-container";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileUploadField } from "@/components/uploads/file-upload-field";
 
 export default function NewProjectPage() {
   return (
@@ -74,16 +75,16 @@ export default function NewProjectPage() {
 
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-950">
-                Brochure URL
+                Brochure (PDF)
               </label>
-              <Input name="brochureUrl" placeholder="https://..." />
+              <FileUploadField name="brochureUrl" kind="pdf" />
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-950">
-                Hero Image URL
+                Hero Image
               </label>
-              <Input name="heroImage" placeholder="https://..." />
+              <FileUploadField name="heroImage" />
             </div>
 
             <div>
