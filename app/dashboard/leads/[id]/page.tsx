@@ -4,12 +4,13 @@ import {
   ArrowLeft,
   CalendarClock,
   Mail,
+  MessageCircle,
   MapPin,
   Phone,
   User,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatIndianPhone, whatsappLink } from "@/lib/utils";
 import { LeadUpdateForm } from "@/components/forms/lead-update-form";
 import { updateLead } from "./actions";
 import { getCurrentCompany } from "@/lib/current-company";
@@ -41,13 +42,19 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
 
   const updateLeadWithId = updateLead.bind(null, lead.id);
 
+  const projectName = lead.project?.name ?? "our project";
+  const waUrl = whatsappLink(
+    lead.phone,
+    `Hi ${lead.name}, this is ${company.name}. Thank you for your enquiry about ${projectName}. When would be a good time to talk?`,
+  );
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
       <div className="mb-8">
         <Link
           href="/dashboard/leads"
-          className="inline-flex items-center gap-2 text-sm font-medium text-white "
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-gray-950"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to leads
@@ -56,14 +63,34 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
         <div className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{lead.name}</h1>
-            <p className="mt-1 text-sm text-white">
+            <p className="mt-1 text-sm text-gray-600">
               Lead captured on {formatDate(lead.createdAt)}
             </p>
           </div>
 
-          <span className="w-fit rounded-full bg-black px-4 py-2 text-xs font-medium text-white">
-            {lead.status}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
+              </a>
+            )}
+            <a
+              href={`tel:${lead.phone}`}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-gray-950 px-4 text-sm font-semibold text-white hover:bg-gray-800"
+            >
+              <Phone className="h-4 w-4" />
+              Call
+            </a>
+            <span className="w-fit rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-950">
+              {lead.status.replaceAll("_", " ")}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -90,7 +117,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                   href={`tel:${lead.phone}`}
                   className="font-semibold text-black hover:underline"
                 >
-                  {lead.phone}
+                  {formatIndianPhone(lead.phone)}
                 </a>
               </div>
 

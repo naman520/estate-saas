@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FileUploadField } from "@/components/uploads/file-upload-field";
 
 type CompanySettingsFormProps = {
   company: {
@@ -96,16 +97,13 @@ export function CompanySettingsForm({
 
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-950">
-                Logo URL
+                Logo
               </label>
-              <Input
+              <FileUploadField
                 name="logo"
-                defaultValue={company.logo || ""}
-                placeholder="https://example.com/logo.png"
+                defaultValue={company.logo}
+                aspect="square"
               />
-              <p className="mt-2 text-xs font-medium text-gray-600">
-                Image upload will come later. For now, paste a logo URL.
-              </p>
             </div>
 
             <div>

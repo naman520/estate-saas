@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileUploadField } from "@/components/uploads/file-upload-field";
+import { GalleryUploadField } from "@/components/uploads/gallery-upload-field";
 
 type ProjectEditFormProps = {
   project: {
@@ -38,8 +40,8 @@ export function ProjectEditForm({
   updateAction,
 }: ProjectEditFormProps) {
   const galleryValue = Array.isArray(project.galleryImages)
-    ? project.galleryImages.join("\n")
-    : "";
+    ? project.galleryImages.filter((u): u is string => typeof u === "string")
+    : [];
   return (
     <Card>
       <CardContent className="p-6">
@@ -112,24 +114,20 @@ export function ProjectEditForm({
 
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-950">
-              Brochure URL
+              Brochure (PDF)
             </label>
-            <Input
+            <FileUploadField
               name="brochureUrl"
-              defaultValue={project.brochureUrl || ""}
-              placeholder="https://..."
+              kind="pdf"
+              defaultValue={project.brochureUrl}
             />
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-950">
-              Hero Image URL
+              Hero Image
             </label>
-            <Input
-              name="heroImage"
-              defaultValue={project.heroImage || ""}
-              placeholder="https://..."
-            />
+            <FileUploadField name="heroImage" defaultValue={project.heroImage} />
           </div>
 
           <div>
@@ -219,18 +217,9 @@ export function ProjectEditForm({
 
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-950">
-              Gallery Image URLs
+              Gallery Images
             </label>
-            <Textarea
-              name="galleryImages"
-              defaultValue={galleryValue}
-              placeholder={`https://example.com/image-1.jpg
-https://example.com/image-2.jpg
-https://example.com/image-3.jpg`}
-            />
-            <p className="mt-2 text-xs font-medium text-gray-600">
-              Add one image URL per line.
-            </p>
+            <GalleryUploadField name="galleryImages" defaultValue={galleryValue} />
           </div>
 
           <div>

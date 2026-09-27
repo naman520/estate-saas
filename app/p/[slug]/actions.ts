@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseFormConfig } from "@/lib/form-config";
 import { normalizePhone, safeRelativePath } from "@/lib/utils";
+import { notifyNewLead } from "@/lib/notifications";
 
 /** Ad-attribution params captured from the landing page URL. */
 const ATTRIBUTION_KEYS = [
@@ -102,7 +104,7 @@ export async function createFormLead(formData: FormData) {
   ).slice(0, 50);
 
   try {
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         projectId: project.id,
         companyId: project.companyId,
@@ -119,6 +121,10 @@ export async function createFormLead(formData: FormData) {
         },
       },
     });
+
+    // Email the builder after the response is sent, so the visitor never
+    // waits on the email provider and a failed email can't lose the lead.
+    after(() => notifyNewLead(lead.id));
   } catch (error) {
     // @@unique([projectId, phone]) — same person enquired twice
     if (
